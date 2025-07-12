@@ -1,0 +1,10 @@
+cv_ur5_project
+/home/brevin/cv_workspace/devel/.private/cv_ur5_project/cmake.lock /home/brevin/cv_workspace/devel/./cmake.lock
+/home/brevin/cv_workspace/devel/.private/cv_ur5_project/share/cv_ur5_project/cmake/cv_ur5_projectConfig-version.cmake /home/brevin/cv_workspace/devel/share/cv_ur5_project/cmake/cv_ur5_projectConfig-version.cmake
+/home/brevin/cv_workspace/devel/.private/cv_ur5_project/share/cv_ur5_project/cmake/cv_ur5_projectConfig.cmake /home/brevin/cv_workspace/devel/share/cv_ur5_project/cmake/cv_ur5_projectConfig.cmake
+/home/brevin/cv_workspace/devel/.private/cv_ur5_project/lib/pkgconfig/cv_ur5_project.pc /home/brevin/cv_workspace/devel/lib/pkgconfig/cv_ur5_project.pc
+/home/brevin/cv_workspace/devel/.private/cv_ur5_project/lib/cv_ur5_project/items_spawner /home/brevin/cv_workspace/devel/lib/cv_ur5_project/items_spawner
+/home/brevin/cv_workspace/devel/.private/cv_ur5_project/lib/cv_ur5_project/trajectory /home/brevin/cv_workspace/devel/lib/cv_ur5_project/trajectory
+/home/brevin/cv_workspace/devel/.private/cv_ur5_project/lib/cv_ur5_project/items_poses_publisher /home/brevin/cv_workspace/devel/lib/cv_ur5_project/items_poses_publisher
+/home/brevin/cv_workspace/devel/.private/cv_ur5_project/lib/cv_ur5_project/ik /home/brevin/cv_workspace/devel/lib/cv_ur5_project/ik
+/home/brevin/cv_workspace/devel/.private/cv_ur5_project/lib/cv_ur5_project/basic_shapes /home/brevin/cv_workspace/devel/lib/cv_ur5_project/basic_shapes

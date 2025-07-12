@@ -1,0 +1,43 @@
+arm_controller:
+  type: position_controllers/JointTrajectoryController
+  joints:
+    - shoulder_pan_joint
+    - shoulder_lift_joint
+    - elbow_joint
+    - wrist_1_joint
+    - wrist_2_joint
+    - wrist_3_joint
+  constraints:
+    goal_time: 0.6
+    stopped_velocity_tolerance: 0.05
+    shoulder_pan_joint: {trajectory: 0.1, goal: 0.1}
+    shoulder_lift_joint: {trajectory: 0.1, goal: 0.1}
+    elbow_joint: {trajectory: 0.1, goal: 0.1}
+    wrist_1_joint: {trajectory: 0.1, goal: 0.1}
+    wrist_2_joint: {trajectory: 0.1, goal: 0.1}
+    wrist_3_joint: {trajectory: 0.1, goal: 0.1}
+  stop_trajectory_duration: 0.5
+  state_publish_rate:  25
+  action_monitor_rate: 10
+
+joint_group_effort_controller:
+  type: effort_controllers/JointGroupEffortController
+  joints:
+    - shoulder_pan_joint
+    - shoulder_lift_joint
+    - elbow_joint
+    - wrist_1_joint
+    - wrist_2_joint
+    - wrist_3_joint
+#     - Slider1
+#     - Slider2
+
+# Slider1_effort_controller:
+#   type: effort_controllers/JointEffortController
+#   joint: Slider1
+#   pid: {p: 100.0, i: 0.01, d: 10.0} # Adjust PID parameters as needed
+
+# Slider2_effort_controller:
+#   type: effort_controllers/JointEffortController
+#   joint: Slider2
+#   pid: {p: 100.0, i: 0.01, d: 10.0} # Adjust PID parameters as needed

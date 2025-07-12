@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="ur_arm_gazebo" params="prefix">
+
+    <gazebo reference="${prefix}shoulder_link">
+      <selfCollide>true</selfCollide>
+    </gazebo>
+    <gazebo reference="${prefix}upper_arm_link">
+      <selfCollide>true</selfCollide>
+    </gazebo>
+    <gazebo reference="${prefix}forearm_link">
+      <selfCollide>true</selfCollide>
+    </gazebo>
+    <gazebo reference="${prefix}wrist_1_link">
+      <selfCollide>true</selfCollide>
+    </gazebo>
+    <gazebo reference="${prefix}wrist_3_link">
+      <selfCollide>true</selfCollide>
+    </gazebo>
+    <gazebo reference="${prefix}wrist_2_link">
+      <selfCollide>true</selfCollide>
+    </gazebo>
+    <gazebo reference="${prefix}ee_link">
+      <selfCollide>true</selfCollide>
+    </gazebo>
+
+  <xacro:property name="body_color1" value="Gazebo/Black" />
+  <xacro:property name="body_color2" value="Gazebo/White" />
+
+    <gazebo reference="${prefix}gripper_base_link">
+      <material>${body_color1}</material>
+      <!-- <mu1>200</mu1> -->
+      <!-- <mu2>200</mu2> -->
+      <selfCollide>true</selfCollide>
+      <gravity>false</gravity>
+      <!-- <minDepth>0.001</minDepth>  -->
+      <!-- <maxVel>0.1</maxVel>  -->
+    </gazebo>
+
+    <gazebo reference="${prefix}left_finger_1">
+      <material>${body_color2}</material>
+      <!-- <mu1>200</mu1> -->
+      <!-- <mu2>200</mu2> -->
+      <!-- <kp>1000.0</kp>  -->
+      <!-- <kd>50.0</kd>    -->
+      <selfCollide>true</selfCollide>
+      <gravity>false</gravity>
+      <!-- <minDepth>0.001</minDepth>  -->
+      <!-- <maxVel>0.1</maxVel>  -->
+    </gazebo>
+
+    <gazebo reference="${prefix}right_finger_1">
+      <material>${body_color2}</material>
+      <!-- <mu1>200</mu1> -->
+      <!-- <mu2>200</mu2> -->
+      <!-- <kp>1000.0</kp>  -->
+      <!-- <kd>50.0</kd>    -->
+      <selfCollide>true</selfCollide>
+      <gravity>false</gravity>
+      <!-- <minDepth>0.001</minDepth>  -->
+      <!-- <maxVel>0.1</maxVel>  -->
+    </gazebo>
+
+    <!-- <gazebo reference="${prefix}Slider1">
+      <gravity>false</gravity>
+    </gazebo>
+
+    <gazebo reference="${prefix}Slider2">
+      <gravity>false</gravity>
+    </gazebo> -->
+
+
+  </xacro:macro>
+
+</robot>
