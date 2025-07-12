@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:macro name="robotiq_adapter">
+    <link name="robotiq_adapter">
+      <visual>
+	<geometry>
+          <mesh filename="package://cv_ur5_project/meshes/robotiq_adapter.dae"/>
+	</geometry>
+	<material name="Black">
+          <color rgba="0.7 0.7 0.7 1.0"/>
+	</material>
+      </visual>
+      <collision>
+	<geometry>
+          <mesh filename="package://cv_ur5_project/meshes/robotiq_adapter.dae"/>
+	</geometry>
+      </collision>
+      <inertial>
+	<mass value="4.0"/>
+	<origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+	<inertia ixx="0.00443333156" ixy="0.0" ixz="0.0" iyy="0.00443333156" iyz="0.0" izz="0.0072"/>
+      </inertial>
+    </link>
+  </xacro:macro>
+  
+</robot>
+

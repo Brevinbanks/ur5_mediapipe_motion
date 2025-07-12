@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<robot name="robotiq_adapter" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find cv_ur5_project)/urdf/adapter.xacro" />
+  <xacro:robotiq_adapter/>
+</robot>
+
+
+
+
+
+

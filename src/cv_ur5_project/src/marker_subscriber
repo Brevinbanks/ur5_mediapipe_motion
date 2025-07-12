@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+import rospy
+from visualization_msgs.msg import Marker
+
+def callback(data):
+    # rospy.loginfo("Received marker: %s", data)
+    pass
+
+def listener():
+    rospy.init_node('marker_subscriber', anonymous=True)
+    rospy.Subscriber("visualization_marker", Marker, callback)
+    rospy.spin()
+
+if __name__ == '__main__':
+    listener()

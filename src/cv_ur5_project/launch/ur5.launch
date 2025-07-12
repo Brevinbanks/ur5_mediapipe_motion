@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="limited" default="false"/>
+  <arg name="paused" default="false"/>
+  <arg name="gui" default="true"/>
+  
+  <!-- startup simulated world -->
+  <!--
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" default="$(find assignment1)/worlds/empty.world"/>
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="gui" value="$(arg gui)"/>
+  </include>
+  -->
+  <!-- send robot urdf to param server -->
+  <!--
+  <include file="$(find ur_description)/launch/load_ur5.launch">
+  </include>
+-->
+  <!-- push robot_description to factory and spawn robot in gazebo -->
+  <!--<node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model robot -z 0.1" respawn="false" output="screen" /> -->
+
+  <!--
+  <arg name="controller_config_file" default="$(find ur_gazebo)/config/ur5_controllers.yaml" doc="Config file used for defining the ROS-Control controllers."/>
+  <arg name="controllers" default="joint_state_controller eff_joint_traj_controller" doc="Controllers that are activated by default."/>
+  <arg name="stopped_controllers" default="joint_group_eff_controller" doc="Controllers that are initally loaded, but not started."/>
+  <include file="$(find ur_gazebo)/launch/inc/ur_control.launch.xml">
+    <arg name="controller_config_file" value="$(arg controller_config_file)"/>
+    <arg name="controllers" value="$(arg controllers)"/>
+    <arg name="gui" value="false"/>
+    <arg name="start_gazebo" value="false"/>
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="stopped_controllers" value="$(arg stopped_controllers)"/>
+  </include>
+  -->
+  
+  <!--
+  <rosparam file="$(find ur_gazebo)/controller/arm_controller_ur5.yaml" command="load"/>
+  <node name="arm_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/>
+  -->
+  
+  <param name="use_gui" value="$(arg gui)"/>
+  <include file="$(find ur_gazebo)/launch/ur5.launch">
+    <arg name="gui" value="false"/>
+  </include>
+
+   <include file="$(find ur_description)/launch/ur5_upload.launch">
+    <arg name="limited" value="$(arg limited)"/>
+  </include>
+
+  <param name="adapter_description"
+	 command="$(find xacro)/xacro $(find cv_ur5_project)/urdf/adapter.urdf.xacro"/>
+  
+  <param name="gripper_description"
+	 command="$(find xacro)/xacro $(find robotiq_2f_85_gripper_visualization)/urdf/brevin_robotiq_arg2f_85_model.xacro"/>
+  
+  <node name="robotic_joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <remap from="joint_states" to="/gripper/joint_states"/>
+    <remap from="robot_description" to="gripper_description"/>
+  </node>
+  
+  <node name="robotic_robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+    <remap from="joint_states" to="/gripper/joint_states"/>
+    <remap from="robot_description" to="gripper_description"/>
+  </node>
+
+
+</launch>

@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- startup simulated world added by brevin -->
+  <!-- <include file="$(find gazebo_ros)/launch/empty_world.launch"> -->
+    <!-- <arg name="world_name" default="worlds/empty.world"/> -->
+    <!-- <arg name="paused" value="$(arg paused)"/> -->
+    <!-- <arg name="gui" value="$(arg gui)"/> -->
+  <!-- </include> -->
+
+
+
+  <include file="$(find cv_ur5_project)/launch/ur5.launch">
+    <arg name="limited" value="true"/>
+    <arg name="gui" value="false"/>
+  </include>
+
+  <include file="$(find cv_ur5_project)/launch/viewer.launch"/>
+
+  <node pkg="tf"
+	type="static_transform_publisher"
+	name="tf_pick"
+	args="0 -.046 0 0 0 0 right_inner_finger_pad gripper_pick 10">
+  </node>
+
+  <node pkg="tf"
+	type="static_transform_publisher"
+	name="tf_adapter"
+	args="0.0115 0 0 0 1.5807 0 ee_link robotiq_adapter 10">
+	<!--args="0 0 0 0 1.5807 0 flange robotiq_arg2f_base_link 10">-->
+  </node>  
+
+  <node pkg="tf"
+	type="static_transform_publisher"
+	name="tf_gripper"
+	args="0 0 -0.0025 0 0 0 robotiq_adapter robotiq_arg2f_base_link 10">
+  </node>  
+
+  <node pkg="tf" 
+  type="static_transform_publisher" 
+  name="cylinder_frame_publisher" 
+  args="0.5 0 1.0 0 0 0 base_link cylinder_frame 10" />
+
+  <node pkg="rqt_gui"
+	type="rqt_gui"
+	name="rqt_gui"
+	args="--perspective-file $(find cv_ur5_project)/cv_ur5_project.perspective"/>
+
+  <!-- Run the C++ node -->
+  <node pkg="cv_ur5_project" type="basic_shapes" name="basic_shapes_node" output="screen"/>
+
+  <!-- Run the Python node -->
+  <node pkg="cv_ur5_project" type="marker_subscriber" name="marker_subscriber_node" output="screen"/>
+  
+</launch>
