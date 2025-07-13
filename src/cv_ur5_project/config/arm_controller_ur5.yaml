@@ -1,3 +1,8 @@
+# Joint controller configuration for the UR5 robot.
+# This file defines a position-based JointTrajectoryController (`arm_controller`)
+# for executing joint trajectories, as well as a JointGroupEffortController
+# (`joint_group_effort_controller`) for sending raw effort commands to the UR5 arm.
+
 arm_controller:
   type: position_controllers/JointTrajectoryController
   joints:
@@ -29,15 +34,4 @@ joint_group_effort_controller:
     - wrist_1_joint
     - wrist_2_joint
     - wrist_3_joint
-#     - Slider1
-#     - Slider2
 
-# Slider1_effort_controller:
-#   type: effort_controllers/JointEffortController
-#   joint: Slider1
-#   pid: {p: 100.0, i: 0.01, d: 10.0} # Adjust PID parameters as needed
-
-# Slider2_effort_controller:
-#   type: effort_controllers/JointEffortController
-#   joint: Slider2
-#   pid: {p: 100.0, i: 0.01, d: 10.0} # Adjust PID parameters as needed

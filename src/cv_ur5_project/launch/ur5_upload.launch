@@ -1,8 +1,20 @@
 <?xml version="1.0"?>
 <launch>
+  <!--
+    This launch file generates and loads the URDF for the UR5 robot into the parameter server.
+    It supports an option to load a joint-limited version of the robot and allows configuration
+    of the hardware interface used in transmissions.
+  -->
+
+  <!-- Argument to control whether joint limits [-π, π] are enforced -->
   <arg name="limited" default="false" doc="If true, limits joint range [-PI, PI] on all joints." />
+
+  <!-- Argument to specify the hardware interface used in transmissions -->
   <arg name="transmission_hw_interface" default="hardware_interface/PositionJointInterface" />
 
+  <!-- Load standard URDF if joint limits are not enforced -->
   <param unless="$(arg limited)" name="robot_description" command="$(find xacro)/xacro --inorder '$(find cv_ur5_project)/urdf/ur5_robot.urdf.xacro' transmission_hw_interface:=$(arg transmission_hw_interface)" />
+  
+  <!-- Load limited URDF if joint limits are enforced -->
   <param if="$(arg limited)" name="robot_description" command="$(find xacro)/xacro --inorder '$(find cv_ur5_project)/urdf/ur5_joint_limited_robot.urdf.xacro' transmission_hw_interface:=$(arg transmission_hw_interface)" />
 </launch>

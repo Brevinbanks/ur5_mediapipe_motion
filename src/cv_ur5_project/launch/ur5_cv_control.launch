@@ -1,20 +1,20 @@
 <?xml version="1.0"?>
 <launch>
-  <param name="BlueCube_path" type="str" value="$(find cv_ur5_project)/urdf/BlueCube.urdf"/>
+  <!--
+  Main simulation launch file for the cv_ur5_project.
+  This file sets up the Gazebo environment, loads the UR5 robot and associated controllers,
+  spawns a table, cube, and a viewer camera, and launches visualization tools (RViz, RQT).
+  It handles URDF uploads, controller spawning, static transforms, and custom state publishers
+  for full robot simulation with gripper and visual feedback.
+
+  NOTE: Assumes all dependencies and paths are correct for Gazebo, RViz, and controller configuration.
+  -->
 
   <arg name="limited" default="true"/>
   <arg name="paused" default="false"/>
   <arg name="gui" default="true"/>
   <arg name="debug" default="false" />
   <arg name="sim" default="true" />
-
-  <!-- startup simulated world -->
-  <!-- <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" default="worlds/empty.world"/>
-    <arg name="paused" value="$(arg paused)"/>
-    <arg name="gui" value="$(arg gui)"/>
-  </include> -->
-
 
   <!-- Include the empty_world.launch file -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -25,161 +25,73 @@
     <arg name="gui" value="$(arg gui)"/>
   </include>
 
-
-
   <!-- spwan ur5 -->
   <!-- send robot urdf to param server -->
   <include file="$(find cv_ur5_project)/launch/ur5_upload.launch">
     <arg name="limited" value="$(arg limited)"/>
   </include>
 
-  <!-- Set initial joint state for the shoulder lift joint -->
-  <rosparam command="load" file="$(find cv_ur5_project)/config/initial_joint_states.yaml" />
-
   <!-- push robot_description to factory and spawn robot in gazebo -->
   <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model robot -z 1.1225 -x 1.4 -y 0.7" respawn="false" output="screen" />
-
+  
+  <!-- Load additional controller utilities -->
   <include file="$(find cv_ur5_project)/launch/controller_utils.launch"/>
 
+  <!-- Load and spawn arm controller -->
   <rosparam file="$(find cv_ur5_project)/config/arm_controller_ur5.yaml" command="load"/>
   <node name="arm_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/>
 
-  <!-- Remap follow_joint_trajectory -->
+  <!-- Remap trajectory topic to match arm controller -->
   <remap if="$(arg sim)" from="/follow_joint_trajectory" to="/arm_controller/follow_joint_trajectory"/>
 
-
+ <!-- Load extra gazebo controller parameters -->
   <rosparam file="$(find cv_ur5_project)/config/gazebo_controller.yaml" command="load" />
-  <!-- Launch moveit -->
-  <!-- <include file="$(find ur5_moveit_config)/launch/move_group.launch">
-    <arg name="limited" default="$(arg limited)"/>
-    <arg name="debug" default="$(arg debug)" />
-  </include> -->
 
-  <!-- spawn the conveyor_belt in gazebo -->
+  <!-- spawn the table in gazebo -->
   <node name="spawn_table" pkg="gazebo_ros" type="spawn_model" args="-file $(find cv_ur5_project)/urdf/Table.urdf -urdf -model Table" />
-  <!-- the red blocks spawner node -->
-  <!-- <node name="items_spawner" pkg="cv_ur5_project" type="items_spawner" output="screen" /> -->
-
-  <!-- the cylinder poses publisher node -->
-  <!-- <node name="items_poses_publisher" pkg="cv_ur5_project" type="items_poses_publisher" output="screen" /> -->
-
-
   
-
-  <!-- <param name="adapter_description"
-	 command="$(find xacro)/xacro $(find cv_ur5_project)/urdf/adapter.urdf"/>
+  <!-- Load and spawn gripper controllers -->
+  <rosparam file="$(find cv_ur5_project)/config/gripper_controller.yaml" command="load"/>
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="Slider1_effort_controller gripper_joint_state_controller"/>
   
-  <param name="gripper_description"
-	 command="$(find xacro)/xacro $(find robotiq_2f_85_gripper_visualization)/urdf/brevin_robotiq_arg2f_85_model.urdf"/>
-  
-  <node name="robotic_joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-    <remap from="joint_states" to="/gripper/joint_states"/>
-    <remap from="robot_description" to="gripper_description"/>
-  </node>
-  
-  <node name="robotic_robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
-    <remap from="joint_states" to="/gripper/joint_states"/>
-    <remap from="robot_description" to="gripper_description"/>
+  <!-- Publish gripper joint states to the appropriate topic -->
+  <node name="gripper_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
+    <remap from="/joint_states" to="/MockGripper/joint_states"/>
   </node>
 
-  <node name="spawn_adapter_model" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param adapter_description -model adapter"> </node>
+  <!-- Load RQT GUI with preconfigured perspective (gui for manual control) -->
+  <node pkg="rqt_gui"
+  type="rqt_gui"
+  name="rqt_gui"
+  args="--perspective-file $(find cv_ur5_project)/cv_ur5_project.perspective"/>
 
-  Spawn the gripper model into Gazebo
-  <node name="spawn_gripper_model" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param gripper_description -model gripper"> </node>
+  <!-- Load cube URDF as param and spawn in Gazebo -->
+  <param name="cube" command="$(find xacro)/xacro $(find cv_ur5_project)/urdf/cube_pick_place.urdf"/>
+  <arg name="x_c" default="1.35"/>
+  <arg name="y_c" default="0.25"/>
+  <arg name="z_c" default="1.32"/>
+  <node name="spawn_cube" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param cube -model cube_pick_place -x $(arg x_c) -y $(arg y_c) -z $(arg z_c)" />
 
- -->
+  <!-- Static transforms for robot base to world frame -->
+  <node pkg="tf" type="static_transform_publisher" name="initial_base_pose_publisher"
+      args="1.40000000054 0.700000036805 1.12250020065 0 0 0 /world /base 100" />
+  <node pkg="tf" type="static_transform_publisher" name="initial_base_link_pose_publisher"
+      args="1.40000000054 0.700000036805 1.12250020065 0 0 0 /world /base_link 100" />
 
+  <!-- Optional RQT reconfigure panel for gripper control -->
+  <node name="rqt_reconfigure" pkg="rqt_gui" type="rqt_gui" />
+    
+  <!-- Load viewer camera URDF and spawn it -->
+  <param name="cam" command="$(find xacro)/xacro $(find cv_ur5_project)/urdf/viewer_cam.urdf"/>
+  <node name="spawn_cam" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param cam -model viewer_cam" />
 
+  <!-- Static transform for viewer camera in world frame -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="viewer_cam_tf" args="2.4 .2 1.5 1.57 0 -1.57 world viewer_cam_link" />
 
+  <!-- Launch RViz with predefined config -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find cv_ur5_project)/cv_ur5_project.rviz" />
 
-
-<!-- 
-  <node pkg="tf" 
-  type="static_transform_publisher" 
-  name="cube_frame_publisher" 
-  args="0.5 0 1.0 0 0 0 base_link cube 10" /> -->
-
-  <!-- <node pkg="tf"
-	type="static_transform_publisher"
-	name="tf_pick"
-	args="0 -.046 0 0 0 0 right_inner_finger_pad gripper_pick 10">
-  </node>
-
-  <node pkg="tf"
-	type="static_transform_publisher"
-	name="tf_adapter"
-	args="0.0115 0 0 0 1.5807 0 ee_link robotiq_adapter 10">
-	args="0 0 0 0 1.5807 0 flange robotiq_arg2f_base_link 10">-->
-  <!-- </node>   -->
-
-  <!-- <node pkg="tf"
-	type="static_transform_publisher"
-	name="tf_gripper"
-	args="0 0 -0.0025 0 0 0 robotiq_adapter robotiq_arg2f_base_link 10">
-  </node>  -->
-
-
-
-
-
-
-  <!-- Run the C++ node -->
-  <!-- <node pkg="cv_ur5_project" type="basic_shapes" name="basic_shapes_node" output="screen"/> -->
-
-  <!-- Run the Python node -->
-  <!-- <node pkg="cv_ur5_project" type="marker_subscriber" name="marker_subscriber_node" output="screen"/> -->
-  
-  <!-- for ros control to be used with scara robot -->
-<!--   <param name="/scara_robot_left/robot_description" textfile="$(find two_scara_collaboration)/urdf/scara_robot_left.urdf" /> -->
-
-<!-- spawn the red_box in gazebo -->
-<!-- node name="spawn_red_box" pkg="gazebo_ros" type="spawn_model" args="-file $(find cv_ur5_project)/urdf/red_box.urdf -urdf -model red_box"/ -->
-
-<rosparam file="$(find cv_ur5_project)/config/initial_joint_states.yaml" command="load"/>
-
-<rosparam file="$(find cv_ur5_project)/config/controller.yaml" command="load"/>
-<node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="Slider1_effort_controller gripper_joint_state_controller"/>
-<node name="gripper_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
-  <remap from="/joint_states" to="/MockGripper/joint_states"/>
-</node>
-
-
-
-<node pkg="rqt_gui"
-type="rqt_gui"
-name="rqt_gui"
-args="--perspective-file $(find cv_ur5_project)/cv_ur5_project.perspective"/>
-
-<param name="cube" command="$(find xacro)/xacro $(find cv_ur5_project)/urdf/cube_pick_place.urdf"/>
-<arg name="x_c" default="1.35"/>
-<arg name="y_c" default="0.25"/>
-<arg name="z_c" default="1.32"/>
-<node name="spawn_cube" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param cube -model cube_pick_place -x $(arg x_c) -y $(arg y_c) -z $(arg z_c)" />
-
-<node pkg="tf" type="static_transform_publisher" name="initial_base_pose_publisher"
-    args="1.40000000054 0.700000036805 1.12250020065 0 0 0 /world /base 100" />
-<node pkg="tf" type="static_transform_publisher" name="initial_base_link_pose_publisher"
-    args="1.40000000054 0.700000036805 1.12250020065 0 0 0 /world /base_link 100" />
-
-<node name="rqt_reconfigure" pkg="rqt_gui" type="rqt_gui" />
-  
-
-<param name="cam" command="$(find xacro)/xacro $(find cv_ur5_project)/urdf/viewer_cam.urdf"/>
-
-<node name="spawn_cam" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param cam -model viewer_cam" />
-
-<!-- Directly pass to state publisher -->
-
-<node pkg="tf2_ros" type="static_transform_publisher" name="viewer_cam_tf" args="2.4 .2 1.5 1.57 0 -1.57 world viewer_cam_link" />
-
-<!-- <node name="viewer_cam_node" pkg="cv_ur5_project" type="viewer_cam.py" output="screen" /> -->
-
-<node name="rviz" pkg="rviz" type="rviz" args="-d $(find cv_ur5_project)/cv_ur5_project_2.rviz" />
-
-<node name="model_state_publisher" pkg="cv_ur5_project" type="model_state_tf_publisher.py" output="screen"/>
-
-
-
-
+  <!-- Start model state to TF bridge -->
+  <node name="model_state_publisher" pkg="cv_ur5_project" type="model_state_tf_publisher.py" output="screen"/>
 
 </launch>

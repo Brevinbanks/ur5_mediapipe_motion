@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <launch>
-  <!--<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" >
-    <param name="use_gui" value="true"/>
-  </node>
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />-->
+  <!--
+    Launch file to start RViz with a preconfigured display layout from the cv_ur5_project.rviz config file.
+  -->
+
+  <!-- Launch RViz with the custom configuration -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find cv_ur5_project)/cv_ur5_project.rviz" />
 </launch>

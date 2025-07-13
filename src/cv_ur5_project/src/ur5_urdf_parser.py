@@ -1,3 +1,13 @@
+"""
+This ROS node constructs a symbolic forward kinematics model of the UR5 robot
+using its URDF. It parses the robot's kinematic chain and uses SymPy to construct
+symbolic transformations between links. During runtime, it subscribes to
+`/joint_states`, computes the forward kinematics using a separate module
+(`ur5_FKandJacob.py`), and publishes a TF frame (`parser_tool`) using the 
+calculated transform of the end effector.
+
+Author: Brevin Banks
+"""
 
 import rospy
 from std_msgs.msg import Float64MultiArray
@@ -18,7 +28,7 @@ class ur5_urdf_parser(object):
                  link_names = ['world', 'base_link', 'shoulder_link', 'upper_arm_link','forearm_link', 'wrist_1_link', 'wrist_2_link', 'wrist_3_link', 'tool0']
                 ,joint_names = ['world_joint', 'base_link-base_fixed_joint', 'shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint',  'wrist_2_joint', 'wrist_3_joint', 'wrist_3_link-tool0_fixed_joint']
                 ):
-        # print(robot)
+
         self.robot = robot
         self.link_names = link_names
         self.joint_names = joint_names
@@ -27,11 +37,7 @@ class ur5_urdf_parser(object):
         self.frame_stack = []
         self.create_symbolicFK()
         
-        # base_link = robot.get_root()
-        # link_names = robot.link_map.keys()#[len(robot.link_map)-1]
-        # joint_names = robot.joint_map.keys()#[len(robot.link_map)-1]
-        # joint_names = ['world_joint', 'base_link-base_fixed_joint', 'shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint',  'wrist_2_joint', 'wrist_3_joint', 'wrist_3_link-tool0_fixed_joint']
-        
+
     def build_robot(self):
         robot_tree = []
         for link in self.robot.links:
@@ -60,7 +66,7 @@ class ur5_urdf_parser(object):
         root_joint = ""
         k = 0
         for link in robot_tree:
-            if link[1]==[]: #has no children
+            if link[1]==[]: 
                 root_joint = link[2]
                 tree_details.append(link)
                 robot_tree.pop(k)
@@ -110,8 +116,6 @@ class ur5_urdf_parser(object):
         if isinstance(item, list) and all(isinstance(items, str) for items in item):  # Check if item is a list
             if len(item) == 1:  # Check if the list has only one element
                 return item[0]  # Return the single element
-            # else:
-            #     return None  # Return None if the list has more than one element
         else:
             return item  # Return the item itself if it's not a list
 
@@ -192,8 +196,6 @@ class ur5_urdf_parser(object):
                     tf_s.append(transform_matrix)
         self.frame_stack = tf_s
 
-        # for frame in tf_s:
-        #     sp.pprint(frame)
 
     def FK_solve_sym(self,link1,link2):
         
@@ -221,7 +223,6 @@ if __name__ == "__main__":
  
 
     parser = ur5_urdf_parser()
-    # expression = parser.FK_solve_sym('world','tool0')
  
     rospy.init_node('kinematics_example')
 
@@ -236,7 +237,6 @@ if __name__ == "__main__":
                 
             pose = ur5FK.ForwardKinematics(q)
             J = ur5FK.Jacobian(q)
-            # print(pose)
             
             tf_broadcaster = tf2_ros.TransformBroadcaster()
 

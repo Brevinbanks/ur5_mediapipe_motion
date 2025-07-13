@@ -1,46 +1,48 @@
 <?xml version="1.0"?>
 <launch>
+  <!--
+    This launch file sets up a UR5 simulation without the Gazebo environment.
+    It loads the URDF model, static transforms for various gripper frames, visualization tools,
+    and two nodes (one C++ and one Python) for marker-based interaction and visualization.
+  -->
 
-  <!-- startup simulated world added by brevin -->
-  <!-- <include file="$(find gazebo_ros)/launch/empty_world.launch"> -->
-    <!-- <arg name="world_name" default="worlds/empty.world"/> -->
-    <!-- <arg name="paused" value="$(arg paused)"/> -->
-    <!-- <arg name="gui" value="$(arg gui)"/> -->
-  <!-- </include> -->
-
-
-
+  <!-- Load UR5 robot model, without launching Gazebo GUI -->
   <include file="$(find cv_ur5_project)/launch/ur5.launch">
     <arg name="limited" value="true"/>
     <arg name="gui" value="false"/>
   </include>
 
+  <!-- Launch viewer setup (likely RViz and related publishers) -->
   <include file="$(find cv_ur5_project)/launch/viewer.launch"/>
 
+  <!-- Static transform from right finger pad to custom gripper_pick frame -->
   <node pkg="tf"
 	type="static_transform_publisher"
 	name="tf_pick"
 	args="0 -.046 0 0 0 0 right_inner_finger_pad gripper_pick 10">
   </node>
 
+  <!-- Static transform from UR5 end effector to Robotiq adapter -->
   <node pkg="tf"
 	type="static_transform_publisher"
 	name="tf_adapter"
 	args="0.0115 0 0 0 1.5807 0 ee_link robotiq_adapter 10">
-	<!--args="0 0 0 0 1.5807 0 flange robotiq_arg2f_base_link 10">-->
   </node>  
 
+  <!-- Static transform from Robotiq adapter to base link of gripper -->
   <node pkg="tf"
 	type="static_transform_publisher"
 	name="tf_gripper"
 	args="0 0 -0.0025 0 0 0 robotiq_adapter robotiq_arg2f_base_link 10">
   </node>  
 
+  <!-- Static transform to define cylinder frame relative to robot base -->
   <node pkg="tf" 
   type="static_transform_publisher" 
   name="cylinder_frame_publisher" 
   args="0.5 0 1.0 0 0 0 base_link cylinder_frame 10" />
 
+  <!-- Launch RQT GUI with saved perspective -->
   <node pkg="rqt_gui"
 	type="rqt_gui"
 	name="rqt_gui"

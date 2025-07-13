@@ -1,15 +1,24 @@
 #!/usr/bin/env python
 
+# This ROS node subscribes to the "visualization_marker" topic to listen for Marker messages.
+# Currently, the callback does nothing — it's a placeholder for future processing or logging.
+
 import rospy
 from visualization_msgs.msg import Marker
 
 def callback(data):
-    # rospy.loginfo("Received marker: %s", data)
+    # This function is called every time a Marker message is received.
+    # rospy.loginfo("Received marker: %s", data)  # Uncomment to log incoming marker data
     pass
 
 def listener():
+    # Initialize the ROS node
     rospy.init_node('marker_subscriber', anonymous=True)
+    
+    # Subscribe to the visualization_marker topic
     rospy.Subscriber("visualization_marker", Marker, callback)
+    
+    # Keep the node alive and responsive to incoming messages
     rospy.spin()
 
 if __name__ == '__main__':

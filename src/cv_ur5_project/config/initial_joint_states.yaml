@@ -1,7 +1,0 @@
-joint_states:
-  elbow_joint: 1.51
-  shoulder_lift_joint: -1.81 
-  shoulder_pan_joint: -2.14
-  wrist_1_joint: -1.13
-  wrist_2_joint: -1.57
-  wrist_3_joint: 0

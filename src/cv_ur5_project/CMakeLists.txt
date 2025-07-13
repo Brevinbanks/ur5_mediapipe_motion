@@ -73,8 +73,7 @@ find_package(OpenCV 3.2.0 REQUIRED)
 #   Message1.msg
 #   Message2.msg
 # )
-add_message_files(FILES item_poses.msg)
-add_message_files(FILES Tracker.msg)
+
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -136,20 +135,15 @@ include_directories(
   #${PCL_INCLUDE_DIRS}
 )
 
-## Declare a cpp library
-# add_library(cv_ur5_project
-#   src/${PROJECT_NAME}/cv_ur5_project.cpp
-# )
+
 
 ## Declare a cpp executable
-add_executable( trajectory src/trajectory.cpp src/cv_ur5_project.cpp)
+
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(cv_ur5_project_node cv_ur5_project_generate_messages_cpp)
 
-## Specify libraries to link a library or executable target against
-target_link_libraries( trajectory ${catkin_LIBRARIES} )
 
 #############
 ## Install ##
@@ -190,32 +184,18 @@ target_link_libraries( trajectory ${catkin_LIBRARIES} )
 ## Testing ##
 #############
 
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_cv_ur5_project.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(ik src/ik.cpp)
-target_link_libraries(ik ${catkin_LIBRARIES} orocos-kdl)
+
 add_executable(basic_shapes src/basic_shapes.cpp)
 target_link_libraries(basic_shapes ${catkin_LIBRARIES})
 
 
 # Declare the executable, along with its source files.
-add_executable(items_spawner src/items_spawner.cpp)
-add_executable(items_poses_publisher src/items_poses_publisher.cpp)
 
 # Specify libraries against which to link.
-target_link_libraries(items_spawner ${catkin_LIBRARIES})
-target_link_libraries(items_poses_publisher ${catkin_LIBRARIES})
-
-
-#add_executable(ur5_planning src/planning.cpp)
-#target_link_libraries(ur5_planning ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
 
 
 #############
@@ -233,9 +213,5 @@ catkin_install_python(PROGRAMS
 
 catkin_install_python(PROGRAMS
   src/delayed_joint_state_publisher.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-catkin_install_python(PROGRAMS src/viewer_cam.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
