@@ -47,21 +47,28 @@ sudo apt install -y \
 ```
 Note: Replace `melodic` with your ROS distribution name.
 
+You'll also want to clone the roboticsgroup_gazebo_plugins repo into your catkin workspace under cv_workspace/src/cv_ur5_project/src/roboticsgroup_gazebo_plugins. This allows pick and place tasks to take place in the physics engine of Gazebo. You can find the repo here: https://github.com/roboticsgroup/roboticsgroup_gazebo_plugins
+You can use the following command to clone the repo:
+```bash
+cd ~/cv_workspace/src/cv_ur5_project/src
+git clone https://github.com/roboticsgroup/roboticsgroup_gazebo_plugins.git
+```
+
 ## A Note on Python Versions and Mediapipe
 Melodic and ROS1 use Python 2.7 for workspace scripts and dependencies.
 However Mediapipe is only compatible with Python 3.6+.
-Because of this we have two paths forward. If you are using Linux as your base OS, you can use the `python3` command to run the Mediapipe scripts (assumin you have python3 installed), and if you've setup your workspace correctly then the ROS scripts should run under Python 2.7 just fine.
+Because of this we have two paths forward. If you are using Linux as your base OS, you can use the `python3` command to run the Mediapipe scripts (assuming you have python3 installed), and if you've setup your workspace correctly then the ROS scripts should run under Python 2.7 just fine.
 Google's Mediapipe should install via "pip install mediapipe" on most modern systems, but heads up:
 
-    It officially supports Python 3.7 to 3.10 (sometimes 3.11 works but not guaranteed).
+  It officially supports Python 3.7 to 3.10 (sometimes 3.11 works but not guaranteed).
 
-    You’ll need a 64-bit OS.
+  You’ll need a 64-bit OS.
 
-    On Linux, it can be a bit finicky—sometimes you need extra dependencies like libprotobuf or a proper C++ compiler toolchain installed.
+  On Linux, it can be a bit finicky—sometimes you need extra dependencies like libprotobuf or a proper C++ compiler toolchain installed.
 
-    GPU support is more complicated; the default pip install is CPU-only.
+  GPU support is more complicated; the default pip install is CPU-only.
 
-Additionally, If you are operating with a VM for Linux you will need to take advantage of the websocket bridge to communicate with ROS across the VM from windows on python3. You may need to do this even if both python platforms are in Linux. I'll discuss how to do this in more detail in the next section.
+Additionally, If you are operating with a VM for Linux you will need to take advantage of the websocket bridge to communicate with ROS across the VM from windows on python3. You may need to do this even if both python platforms are in Linux. I'll discuss how to do this in more detail in the Control the Robot with the Mediapipe Controller section.
 
 ## Python Dependencies
 In your Python 2.7 environment, install numpy and sympy:
@@ -72,7 +79,7 @@ pip install sympy
 These are the only depenedencies for the project that may not already be installed in the ROS Melodic distribution.
 
 ## Mediapipe Dependencies
-In your Python 3.6 environment, install the requirements.txt file in the python3files folder:
+In your Python 3.7+ environment, install the requirements.txt file in the python3files folder:
 ```bash
 pip install -r requirements.txt
 ```
@@ -99,14 +106,14 @@ roslaunch cv_ur5_project ur5_robotiq.launch
 Rviz will open up with a ur5, some frames marked and floating, and a camera feed - but the feed will be black. This is because we haven't launched the Gazebo simulation yet.
 Additionally, two rqt windows will open up. One is the joint controller GUI, and the other is the rqt_reconfigure GUI.
 
-The joint controller will allow you to control the joints of the robot individually if you select the controller availalbe in the two drop down menus and click the play button. NOTE that you must turn the button back off to use the mediapipe controller or any other script based controller.
+The joint controller will allow you to control the joints of the robot individually if you select the controller available in the two drop down menus and click the play button. NOTE that you must turn the button back off to use the mediapipe controller or any other script based controller.
 
 The rqt_reconfigure GUI will allow you to edit specific node parameters, but the default one that pops up is Slider1. This is the joint effort controller for the gripper. Click the drop down arrow next to the Slider1 item and then you can see a number for the effort.
 -100 is closed, 100 is open. Check the box to have these changes effect the gripper. Uncheck the box if you want to have the mediapipe controller control the gripper.
 
-Be sure to kill the launch process if you want to launch a different file.
+Be sure to kill the launch process with ctrl+C if you want to launch a different file.
 
-To run the main project after building and sourceing (assuming you have 0 hair ripping ROS errors to fix), you can launch the project with the following command:
+To run the main project after building and sourcing (assuming you made it here without any hair ripping ROS errors to fix), you can launch the project with the following command:
 
 ```bash
 cd ~/cv_workspace
@@ -134,7 +141,7 @@ cd ~/cv_workspace/src/cv_ur5_project/src
 ./ cv_joint_pub.py
 ```
 The robot should move to the joint angles in the script.
-Kill that script with ctrl+c in the terminal.
+After the robot has moved be sure to kill that script with ctrl+c in the terminal before other motion scripts.
 
 To run the kinematic_control_ur5.py script, we can run the following command:
 ```bash
@@ -145,17 +152,17 @@ The robot should move to the home pose in the script and then move to the goal p
 However, the robot will not move to the goal poses if the mediapipe pose and hand landmarks are not detected or the mediapipe script is not running. Let's stop the script with ctrl+c in the terminal for now.
 
 # Control the Robot with the Mediapipe Controller
-Make sure rosbridge_websocket is running on your ROS machine. This is a ROS package that allows you to communicate with ROS from a web browser or other machines via websockets.
+Make sure rosbridge_websocket is running on your ROS machine. This is a ROS package that allows you to communicate with ROS from a web browser or other machines via websockets which will let us use the roslibpy tools from python3 to communicate with ROS.
 ```bash
 roslaunch rosbridge_server rosbridge_websocket.launch
 ```
 
-Now we can talk to the ROS machine from python3 across the VM or python versions as long as the python script we run connects itselft the IP Address of the ROS machine.
+Now we can talk to the ROS machine from python3 across the VM or python versions as long as the python script we run connects itself to the IP Address of the ROS machine.
 In the ur5_arm_vision_2_trans_and_grip_python3_talker.py (python3files folder) change the IP address to your ROS machine's IP address.
 This is in the run_vision_ros() function.
 This looks like: client = roslibpy.Ros(host='192.168.127.174', port=9090)
 
-You can find the host IP address by running hostname -I in the terminal.
+You can find your host IP address by running hostname -I in the terminal.
 ```bash
 hostname -I
 
@@ -195,7 +202,7 @@ https://en.wikipedia.org/wiki/Broyden%27s_method
 # Tracking Motion with your Hand. Pick and Place
 With the ur5_arm_vision_2_trans_and_grip_python3_talker.py file running, you are now sending homogeneous transformations to the robot via the /mediapipe_transform topic. This transform, relative to your right hip is mapped to the new goal for the robot's endeffector frame relative to the base frame. In other words, your right hip is the same as the robot' base frame. Rotating your body about your hip will rotate the base link, and moving your elbow and shoulder will have similiar effects on various joints of the robot. Because human arm length varies and is not at all the same as the length of the ur5 robot arm, scaling factors are used to make motion in the XYZ directions easier on the user. 
 
-In ur5_arm_vision_2_trans_and_grip_python3_talker.py you will find a variable called "scaling" that has 3 values. These each are the scae factors for the X, Y, and Z directions that map your hand movement to the robot's movement. If the scale factor of X is 2, then for every unit of movement in the X direction, the robot will move 2 units.
+In ur5_arm_vision_2_trans_and_grip_python3_talker.py you will find a variable called "scaling" that has 3 values. These each are the scale factors for the X, Y, and Z directions that map your hand movement to the robot's movement. If the scale factor of X is 2, then for every unit of hand movement in the X direction, the robot will move 2 units.
 
 With Gazebo open from the launch file, ur5_controller.py running, and kinematic_control_ur5.py running, you can now control the robot with the mediapipe controller. After the robot finishing the homing step from kinematic_control_ur5.py, pose detection will start and the robot will move to your hand position. The gripper will open and close to match the hand state. 
 
@@ -215,55 +222,107 @@ There are two CMakeLists.txt files because:
 •	The other is inside each ROS package → for building that specific package
 
 Files in tree under cv_workspace/src/
+
 ├── CMakeLists.txt-> /opt/ros/melodic/share/catkin/cmake/toplevel.cmake
+
 └── cv_ur5_project-> Project name and directory
-    ├── CMakeLists.txt-> Is a script that tells CMake how to build, link, and install your ROS package or C++ project.
-    ├── config
-    │   ├── arm_controller_ur5.yaml-> Controller to the ur5. Both a joint state and force controller.
-    │   ├── gripper_controller.yaml-> Controller to the robotiq finger grip at the end of the ur5.A joint state and force controller.
-    │   ├── gazebo_controller.yaml-> Controller to the robotiq finger grip for control within the Gazebo simulation.
-    │   └── joint_state_controller.yaml-> Pushes ur5 Joint states to the ROS Server
-    ├── cv_ur5_project.perspective-> Creates the joint controller gui framework
-    ├── cv_ur5_project.rviz-> Rviz default layout with gazebo cam
-    ├── launch
-    │   ├── controller_utils.launch-> Starts the robot_state_publisher
-    │   ├── ur5_cv_control.launch-> Main launch file for ur5 with gazebo simulation, block, table, and Rviz
-    │   ├── ur5.launch-> Sublaunch file for the ur5 robot itself
-    │   ├── ur5_robotiq.launch-> Stand alone launch example for just pulling up the ur5 in Rviz
-    │   ├── ur5_upload.launch-> Pushes the ur5 robot to the ROS server
-    │   └── viewer.launch-> Opens the Rviz viewer
-    ├── meshes
-    │   ├── robotiq_adapter.dae-> Gripper 3D model
-    │   ├── table_link.stl-> Table 3D model
-    │   └── WhiteBox.stl-> Table box 3D model
-    ├── package.xml-> Relevant ros packages for gazebo, trajectory, rviz visualization, message, etc..
-    ├── src
-    │   ├── basic_shapes.cpp-> Debugging script that drops in shapes in an environment
-    │   ├── cv_joint_pub.py->publishes a predefined array of 6 joint values for the ur5. Requires ur5_controller.py to be running.
-    │   ├── delayed_joint_state_publisher.py-> Debugging script for observing ur5 joint states. Waits an iteration before reading
-    │   ├── kinematic_control_ur5.py-> Script run to control ur5 via mediapipe published messages. Requires ur5_controller.py to be running.
-    │   ├── marker_subscriber-> Debugging script that subscribes to the "visualization_marker" topic to listen for Marker messages
-    │   ├── model_state_tf_publisher.py-> listens to Gazebo's /gazebo/model_states topic and publishes static TF frames
-    │   ├── roboticsgroup_gazebo_plugins->Has the ROBOTICSGROUP_GAZEBO_PLUGINS_MIMIC_JOINT_PLUGIN for gripper action.
-    │   ├── ur5_controller.py-> Moves the robot, listens to joint states and activates the controllers
-    │   ├── ur5_FKandJacob.py-> Calculate the forward kinematics from the base_link of the ur5 to the tool0 frame FK, J, and IK for ur5
-    │   └── ur5_urdf_parser.py-> constructs a symbolic forward kinematics model of the UR5 robot using its URDF
-    ├── urdf->Various URDFS and robot part models, camera, table, block, etc. use in the launches
-    │   ├── adapter.urdf
-    │   ├── adapter.urdf.xacro
-    │   ├── adapter.xacro
-    │   ├── common.gazebo.xacro
-    │   ├── cube_pick_place.urdf
-    │   ├── materials.xacro
-    │   ├── MockGripper.xacro
-    │   ├── Table.urdf
-    │   ├── Table.xacro
-    │   ├── ur5_joint_limited_robot.urdf.xacro
-    │   ├── ur5_robot.urdf
-    │   ├── ur5_robot.urdf.xacro
-    │   ├── ur5.urdf.xacro
-    │   ├── ur.gazebo.xacro
-    │   ├── ur.transmission.xacro
-    │   └── viewer_cam.urdf
-    └── worlds
-        └── empty.world -> Empty gazebo world for physic simulation
+
+  ├── CMakeLists.txt-> Is a script that tells CMake how to build, link, and install your ROS package or C++ project.
+    
+  ├── config
+    
+  │   ├── arm_controller_ur5.yaml-> Controller to the ur5. Both a joint state and force controller.
+    
+  │   ├── gripper_controller.yaml-> Controller to the robotiq finger grip at the end of the ur5.A joint state and force controller.
+    
+  │   ├── gazebo_controller.yaml-> Controller to the robotiq finger grip for control within the Gazebo simulation.
+    
+  │   └── joint_state_controller.yaml-> Pushes ur5 Joint states to the ROS Server
+    
+  ├── cv_ur5_project.perspective-> Creates the joint controller gui framework
+    
+  ├── cv_ur5_project.rviz-> Rviz default layout with gazebo cam
+    
+  ├── launch
+    
+  │   ├── controller_utils.launch-> Starts the robot_state_publisher
+    
+  │   ├── ur5_cv_control.launch-> Main launch file for ur5 with gazebo simulation, block, table, and Rviz
+    
+  │   ├── ur5.launch-> Sublaunch file for the ur5 robot itself
+    
+  │   ├── ur5_robotiq.launch-> Stand alone launch example for just pulling up the ur5 in Rviz
+    
+  │   ├── ur5_upload.launch-> Pushes the ur5 robot to the ROS server
+    
+  │   └── viewer.launch-> Opens the Rviz viewer
+    
+  ├── meshes
+    
+  │   ├── robotiq_adapter.dae-> Gripper 3D model
+    
+  │   ├── table_link.stl-> Table 3D model
+    
+  │   └── WhiteBox.stl-> Table box 3D model
+    
+  ├── package.xml-> Relevant ros packages for gazebo, trajectory, rviz visualization, message, etc..
+    
+  ├── src
+    
+  │   ├── basic_shapes.cpp-> Debugging script that drops in shapes in an environment
+    
+  │   ├── cv_joint_pub.py->publishes a predefined array of 6 joint values for the ur5. Requires ur5_controller.py to be running.
+    
+  │   ├── delayed_joint_state_publisher.py-> Debugging script for observing ur5 joint states. Waits an iteration before reading.
+    
+  │   ├── kinematic_control_ur5.py-> Script run to control ur5 via mediapipe published messages. Requires ur5_controller.py to be running.
+    
+  │   ├── marker_subscriber-> Debugging script that subscribes to the "visualization_marker" topic to listen for Marker messages.
+    
+  │   ├── model_state_tf_publisher.py-> listens to Gazebo's /gazebo/model_states topic and publishes static TF frames.
+    
+  │   ├── roboticsgroup_gazebo_plugins->Has the ROBOTICSGROUP_GAZEBO_PLUGINS_MIMIC_JOINT_PLUGIN for gripper action.
+    
+  │   ├── ur5_controller.py-> Moves the robot, listens to joint states and activates the controllers.
+    
+  │   ├── ur5_FKandJacob.py-> Calculate the forward kinematics from the base_link of the ur5 to the tool0 frame FK, J, and IK for ur5.
+    
+  │   └── ur5_urdf_parser.py-> constructs a symbolic forward kinematics model of the UR5 robot using its URDF.
+    
+  ├── urdf->Various URDFS and robot part models, camera, table, block, etc. use in the launches.
+    
+  │   ├── adapter.urdf
+    
+  │   ├── adapter.urdf.xacro
+    
+  │   ├── adapter.xacro
+    
+  │   ├── common.gazebo.xacro
+    
+  │   ├── cube_pick_place.urdf
+    
+  │   ├── materials.xacro
+    
+  │   ├── MockGripper.xacro
+    
+  │   ├── Table.urdf
+    
+  │   ├── Table.xacro
+    
+  │   ├── ur5_joint_limited_robot.urdf.xacro
+    
+  │   ├── ur5_robot.urdf
+    
+  │   ├── ur5_robot.urdf.xacro
+    
+  │   ├── ur5.urdf.xacro
+    
+  │   ├── ur.gazebo.xacro
+    
+  │   ├── ur.transmission.xacro
+    
+  │   └── viewer_cam.urdf
+    
+  └── worlds
+    
+  │   └── empty.world -> Empty gazebo world for physic simulation.
