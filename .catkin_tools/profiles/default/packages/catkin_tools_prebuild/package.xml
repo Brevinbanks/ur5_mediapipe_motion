@@ -5,6 +5,6 @@
   </description>
   <version>0.0.0</version>
   <license>BSD</license>
-  <maintainer email="jbo@jhu.edu">jbohren</maintainer>
+  <maintainer email="brevin.banks@gmail.com">Brevin Banks</maintainer>
   <buildtool_depend>catkin</buildtool_depend>
 </package>

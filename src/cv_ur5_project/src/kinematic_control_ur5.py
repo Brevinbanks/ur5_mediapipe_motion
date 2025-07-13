@@ -1,4 +1,17 @@
 #!/usr/bin/env python
+# Main script for the cv_ur5_project package
+# This file contains the main class for the UR5 robot motion control
+# It first moves the ur5 to the initial joint state, then executes the IK solver
+# The IK solver uses the forward kinematics and Jacobian to compute the joint angles
+# The IK solver then uses the inverse kinematics to compute the end effector pose
+# Goal poses for the IK solver are regularly updated based on the transform callback
+# recieved from the /mediapipe_transform topic. If it detects frames published by the topic
+# post the initialization phase, it will publish goal poses to the joint states
+# Gripper control is also implemented in this file. The gripper is controlled by the
+# /gripper_condition topic, which is then converted to a std_msgs message and published
+# to the /gripper/joint_states topic.
+
+# MAKE SURE ur5_controller.py IS RUNNING BEFORE RUNNING THIS SCRIPT
 
 import rospy
 from std_msgs.msg import Float64MultiArray, Int32, Float64
@@ -16,18 +29,18 @@ import time
 class Iter_IK_ur5():
 
     def __init__(self):
-        self.joint_positions = []
-        self.current_pose = np.eye(4)
-        self.prev_pose = np.eye(4)
-        self.J = np.eye(6)
-        self.J_prev = np.eye(6)
-        self.dq = np.array([[0],[1],[0],[0],[0],[0]])
-        self.q = np.array([[0],[0],[0],[0],[0],[0]])
-        self.goal_pose = np.eye(4)
-        self.ready_for_mediapipe_input = False
-        self.gripper_state = 0
+        self.joint_positions = [] # ur5 joint positions
+        self.current_pose = np.eye(4) # current end effector pose
+        self.prev_pose = np.eye(4) # previous end effector pose
+        self.J = np.eye(6) # Jacobian matrix
+        self.dq = np.array([[0],[1],[0],[0],[0],[0]]) # joint velocity
+        self.q = np.array([[0],[0],[0],[0],[0],[0]]) # joint angles
+        self.goal_pose = np.eye(4) # goal pose for IK solver
+        self.ready_for_mediapipe_input = False # flag to indicate if goal poses are ready once home pose is achieved
+        self.gripper_state = 0 # gripper state
 
     def ForwardKinematics(self, q1, q2, q3, q4, q5, q6):
+        # Compute the forward kinematics for the UR5 robot
         E = np.zeros((4,4))
         E[0][0] = -np.sin(q6)*(np.sin(q1)*np.sin(q5)+np.cos(q2+q3+q4)*np.cos(q1)*np.cos(q5))-np.sin(q2+q3+q4)*np.cos(q1)*np.cos(q6)
         E[0][1] = -np.cos(q6)*(np.sin(q1)*np.sin(q5)+np.cos(q2+q3+q4)*np.cos(q1)*np.cos(q5))+np.sin(q2+q3+q4)*np.cos(q1)*np.sin(q6)
@@ -48,9 +61,8 @@ class Iter_IK_ur5():
         return E
 
     def ForwardKinematicsInverse(self, q1, q2, q3, q4, q5, q6):
-
+        # Compute the inverse of the forward kinematics for the UR5 robot
         E = np.zeros((4,4))
-        
         E[0][0] = -np.sin(q6)*(np.sin(q1)*np.sin(q5)+np.cos(q2+q3+q4)*np.cos(q1)*np.cos(q5))-np.sin(q2+q3+q4)*np.cos(q1)*np.cos(q6)
         E[0][1] = np.sin(q6)*(np.cos(q1)*np.sin(q5)-np.cos(q2+q3+q4)*np.cos(q5)*np.sin(q1))-np.sin(q2+q3+q4)*np.cos(q6)*np.sin(q1)
         E[0][2] = -np.cos(q2+q3+q4)*np.cos(q6)+np.sin(q2+q3+q4)*np.cos(q5)*np.sin(q6)
@@ -65,14 +77,12 @@ class Iter_IK_ur5():
         E[2][3] = np.cos(q5)*(-1.0915E-1)-np.cos(q4)*np.sin(q5)*3.9225E-1+np.sin(q3)*np.sin(q4)*np.sin(q5)*(1.7E+1/4.0E+1)-np.cos(q3)*np.cos(q4)*np.sin(q5)*(1.7E+1/4.0E+1)+np.cos(q2)*np.cos(q3)*np.sin(q4)*np.sin(q5)*8.9159E-2+np.cos(q2)*np.cos(q4)*np.sin(q3)*np.sin(q5)*8.9159E-2+np.cos(q3)*np.cos(q4)*np.sin(q2)*np.sin(q5)*8.9159E-2-np.sin(q2)*np.sin(q3)*np.sin(q4)*np.sin(q5)*8.9159E-2-2.21617731387E-1
         E[3][3] = 1.0
         
-        # E = np.round(E, decimals=4)
 
         return E
 
     def Jacobian(self, q1, q2, q3, q4, q5, q6):
-
+        # Compute the Jacobian matrix for the UR5 robot
         J = np.zeros((6,6))
-        
         J[0][1] = np.cos(q1) * (-8.9159E-2)
         J[0][2] = (np.cos(q1) * (np.sin(q2) * 1.531223873305969E+17 - 3.212291513413808E+16)) / 3.602879701896397E+17
         J[0][3] = (np.cos(q1) * (np.sin(q2 + q3) * 3.533073907672154E+18 + np.sin(q2) * 3.828059683264922E+18 - 8.030728783534521E+17)) / 9.007199254740992E+18
@@ -101,9 +111,6 @@ class Iter_IK_ur5():
         J[5][4] = -np.cos(q2+q3+q4)
         J[5][5] = -np.sin(q2+q3+q4)*np.sin(q5)
 
-
-        # J = np.round(J, decimals=4)
-
         return J
 
 
@@ -114,68 +121,35 @@ class Iter_IK_ur5():
         # Initialize joint angles (q) to some initial guess
         q = np.array([self.joint_positions[3],self.joint_positions[2],self.joint_positions[1],self.joint_positions[4],self.joint_positions[5],self.joint_positions[6]])
                       
-        
-        # Set maximum number of iterations and convergence threshold
-        # max_iterations = 100
-        # convergence_threshold = 0.001
-        
-        # for iteration in range(max_iterations):
-
-        # Compute current end effector pose using forward kinematics
-        # current_pose = ForwardKinematics(g[0],g[1],g[2],g[3],g[4],g[5])
-
-
-        # Compute error between current and goal poses
-        # error = compute_pose_error(start_pose, goal_pose)
-        
-        # Check for convergence
-        # if np.linalg.norm(error) < convergence_threshold:
-        #     break
+        # Set the max error per step and convergence threshold
         Dmax = .2
-        p_error = error
-        error = self.clamp_mag(error,Dmax)
+        p_error = error # previous error
+        error = self.clamp_mag(error,Dmax) # clamp error magnitude 
         
         # Compute Jacobian matrix
         self.J = ur5FK.Jacobian(self.q)
-        # print("Singluarity: ", np.linalg.det(self.J),"Error: ",p_error,"E norm: " ,np.linalg.norm(p_error)," Clamped Error N: ",np.linalg.norm(error))
-        k = 1
-        # dx = self.current_pose-self.prev_pose
+  
+        # Compute the error
         dx = self.compute_pose_error(self.prev_pose, self.current_pose)
-        # self.J_prev = self.J
-        # self.J = self.J_prev + np.outer((np.subtract(dx,np.dot(self.J_prev,self.dq).T)/(np.linalg.norm(self.dq)**2)),self.dq)
 
-        # I = np.eye(6)  # Identity matrix
-        # delta_J = self.J - self.J_prev   # Change in Jacobian matrix
-        # delta_dx = dx - np.dot(self.J, delta_J.T)  # Change in end-effector position or velocity
-
-        # # Update the Jacobian matrix using Broyden's method
-        # updated_J = self.J + np.dot(np.dot(delta_dx,delta_J), np.linalg.inv(np.dot(delta_J.T, delta_J) + I))
-
-        # self.dq = np.dot(np.linalg.pinv(self.J),error)
-        # print(self.J)
+        # Update the Jacobian matrix using Broyden's method (lambda_damp is a damping factor on a modified the damped-least squares method)
         lambda_damp = 0.01
-        # Update joint angles using Jacobian pseudo-inverse
-        # dq = k*np.dot(np.linalg.pinv(J),error)
-        # error[3] =0
-        # error[4] =0
-        # error[5] =0
+        # Update joint angles using where K is a diagonal matrix with the damping factors
         K = np.diag([5,5,5,1,1,1])
-        # np.dot(np.linalg.inv(np.dot(J.T , J) + damping_factor**2 * np.eye(6)), J.T)
-        # Update joint angles using the damped-least squares method
         self.dq = np.dot(np.dot(np.linalg.inv(np.dot(self.J.T , self.J) + lambda_damp**2 * np.eye(6)), self.J.T),np.dot(K,error))
         newq = q
         newq += self.dq
         alpha = 0.9
-        # Apply the low-pass filter inline
-        self.q =  alpha * newq + (1 - alpha) * self.q
 
-        # print(self.J)
+        # Apply a low-pass filter to the joint angles to reduce jitter in the control loop. Helps with slower machines. Can remove on faster processors
+        self.q =  alpha * newq + (1 - alpha) * self.q
             
         return self.q
 
 
 
     def clamp_mag(self, error,Dmax):
+        # Clamp the error magnitude to Dmax
         if np.linalg.norm(error)<Dmax:
             error=error
         else:
@@ -212,7 +186,6 @@ class Iter_IK_ur5():
 
 
     def ur5_joint_sub_callback(self, msg):
-        
         self.joint_positions = msg.position
    
     def transform_callback(self, msg):
@@ -233,57 +206,56 @@ class Iter_IK_ur5():
             self.goal_pose = pose
 
     def gripper_callback(self, msg):
-        # rospy.loginfo('[GRIPPER STATE RECEIVED] %d', msg.data)
+        # Gripper callback function
         self.gripper_state = msg.data
 
-    def publisher(self):
+    def publisher(self): # Main function to publish joint states
+        # Subscribe to the /mediapipe_transform topic
         rospy.Subscriber('/mediapipe_transform', TransformStamped, self.transform_callback)
+        # Subscribe to the /gripper_condition topic
         rospy.Subscriber('/gripper_condition', Int32, self.gripper_callback)
-
+        # Initialize the joint state publisher
         rospy.init_node('joint_states_publisher', anonymous=True)
         pub = rospy.Publisher('cv_des_joint_states', Float64MultiArray, queue_size=10)
-
+        # Initialize the subscriber for the /joint_states topic
         rospy.Subscriber('joint_states', JointState, self.ur5_joint_sub_callback)
         convergence_threshold = 0.001
-
+        # Initialize the gripper publisher
         gripper_pub = rospy.Publisher('/Slider1_effort_controller/command', Float64, queue_size=10)
         tf_broadcaster = tf2_ros.TransformBroadcaster()
-
+        # Initialize the transformation that will be created to use in the IK solver
         transform = geometry_msgs.msg.TransformStamped()
-
-        
+        # define the transformation frame
         transform.header.frame_id = "base_link"  # Assuming models are defined in the base_link frame
         transform.child_frame_id = "ik_goal"
-
+        # Parse the URDF file to understand the robot structure
         parser = ur5_urdf_parser()
-
-
-        # rospy.init_node('gripper_controller', anonymous=True)
-        # pub_grip = rospy.Publisher('/gripper/joint_states', JointState, queue_size=10)
+        # Publish the joint states at 10 Hz. Can change if your machine is faster
         rate = rospy.Rate(10)  # 10Hz
-        
-        # gripper_state_msg = JointState()
-        # gripper_state_msg.name = ['finger_joint', 'left_inner_knuckle_joint', 'left_inner_finger_joint', 'right_outer_knuckle_joint', 'right_inner_knuckle_joint', 'right_inner_finger_joint']
-            
+        # Initialize the goal poses for the IK solver. Dummy values for now
         self.goal_pose = np.array([[-1.00000000e+00, -9.79311649e-12, -4.89652763e-12, 8.17250000e-01]
                               ,[-4.89652763e-12, 2.99829594e-28, 1.00000000e+00, 1.91450000e-01]
                               ,[-9.79311649e-12, 1.00000000e+00, -4.79525653e-23, -5.49100000e-03]
                               ,[0.0, 0.0, 0.0, 1.0]])
         
-        
+        # Wait a second for the robot to initialize and the simulation to settle
         rospy.sleep(1)
+        # Create the joint state message to publish
         joint_states = Float64MultiArray()
-        # joint_states.data = [-1.57,-1.45,2.01,-2.07,-1.57,-1.57]
+        # These values are the homing/start position the robot will move to on initialization
         joint_states.data = [-1.91, -1.4, 2.15, -2.25, -1.57, -0.38]   # Modify with desired values
-
+        # Publish the joint states
         pub.publish(joint_states)
+        # Initialize the error variable, something gretter than 1 to prevent the loop from skipping
         error = 5
         print("putting robot in position")
+        # Break out will help the robot to stop moving if it gets stuck homing forever
         break_out = False
         break_out_time = time.time()
         while np.linalg.norm(error)>1 and break_out == False:
+            # Update the goal poses for each step toward the home position
             self.q = np.array([self.joint_positions[3],self.joint_positions[2],self.joint_positions[1],self.joint_positions[4],self.joint_positions[5],self.joint_positions[6]])
-            self.goal_pose = ur5FK.ForwardKinematics([-1.57,-1.45,2.01,-2.07,-1.57,-1.57])
+            self.goal_pose = ur5FK.ForwardKinematics(joint_states.data)
             self.current_pose = ur5FK.ForwardKinematics(self.q)
             error = self.compute_pose_error(self.current_pose, self.goal_pose)
             if time.time() - break_out_time > 10:
@@ -291,48 +263,34 @@ class Iter_IK_ur5():
                 pub.publish(joint_states)
                 break_out = True
 
+        # Wait for the robot to settle after homing
         rospy.sleep(1.5)
         print("Starting goal tracking")
         rospy.sleep(2)
+        # Initialize the joint angles and Jacobian matrix
         self.q = np.array([self.joint_positions[3],self.joint_positions[2],self.joint_positions[1],self.joint_positions[4],self.joint_positions[5],self.joint_positions[6]])
         self.goal_pose = ur5FK.ForwardKinematics(self.q)
         self.J = ur5FK.Jacobian(self.q)
-        start_time = time.time()
-        dir = 1
+
+        # Enable the ready_for_mediapipe_input flag to indicate that the goal poses are ready to be published from video feed
         self.ready_for_mediapipe_input = True
         while not rospy.is_shutdown():
-            # self.goal_pose[0,3] = self.goal_pose[0,3]-0.01
-            # Define the array of joint states
-            
-            # In here perform CV work to find the required joint angles
-            #add velocity limiter, joint range threshold/limits
-            # print(len(self.joint_positions))
+            # Check the message is acceptable
             if len(self.joint_positions)>0:
-                current_time = time.time()
-                
+                # Compute the current end effector pose
                 self.q = np.array([self.joint_positions[3],self.joint_positions[2],self.joint_positions[1],self.joint_positions[4],self.joint_positions[5],self.joint_positions[6]])
                 self.prev_pose = self.current_pose
                 self.current_pose = ur5FK.ForwardKinematics(self.q)
-                # self.goal_pose = self.current_pose#self.stick_up_down(dir, self.q,self.goal_pose,self.current_pose)
+                # Compute the error between the current and goal poses - remember goal poses are updated by the callback function transform_callback
                 error = self.compute_pose_error(self.current_pose, self.goal_pose)
                 
-
-               
+                # Check if the error is greater than the convergence threshold
                 if np.linalg.norm(error) > convergence_threshold:
-                    joint_states.data = self.iterative_ik_solver(error) # Modify with desired values
-
-                    # Get the forward kinematics
-                    # pose = kinematics.forward(q)
-                    
-                    # # Get the Jacobian
-                    # Jacobian = kinematics.jacobian(q)
-                    #[shoulder pan joint, shoulder lift joint, elbow joint, wrist 1 joint, wrist 2 joint, wrist 3 joint]
-                # joint_states.data = [-2.41, -0.94, 2.37, -2.88, 0.06, -0.07]   # Modify with desired values
-                    # joint_states.data = [0, 0, 0, 0.0, 0, 0.0] 
-                    # print(self.joint_positions)
-                # Publish the joint states
+                    joint_states.data = self.iterative_ik_solver(error)
+                    # if we have not reached the goal poses yet, publish the joint states. In other words move the robot
                     pub.publish(joint_states)
-            
+
+            # Build the transformation message to display a homogeneous transformation version of what the robot is doing
             transform.header.stamp = rospy.Time.now()
             # Assign translation
             transform.transform.translation.x = self.goal_pose[0, 3]
@@ -347,32 +305,17 @@ class Iter_IK_ur5():
             # Publish the transform
             tf_broadcaster.sendTransform(transform)
 
-            # Control the gripper
-            
-            # gripper_state_msg.header.stamp = rospy.Time.now()
-            # gripper_state_msg.position = [0.8, 0.8, -0.8, 0.8, 0.8, -0.8] # 0 to 0.8 are acceptable values for the gripper
+            # Control the gripper based on the gripper state from the /gripper_condition topic in the callback function gripper_callback
             if self.gripper_state == 0:
                 gripper_pub.publish(Float64(100))
+                print("Gripper Open")
             elif self.gripper_state == 2:
                 gripper_pub.publish(Float64(-100))
-
-            print(self.gripper_state)
+                print("Gripper Closed")
+            # Sleep for the loop rate for control
             rate.sleep()
-            # rospy.spinOnce()
 
 
-    def stick_up_down(self,dir,q,old_goal,current_pose):
-        theta = q[0]
-        goal_pose = old_goal
-        goal_pose[0,3] = goal_pose[0,3]+np.cos(theta)*dir*0.02
-        goal_pose[1,3] = goal_pose[1,3]+np.sin(theta)*dir*0.02
-        if np.linalg.norm(current_pose[0:3,3])> 0.80 and np.linalg.norm(goal_pose[0:3,3])>=np.linalg.norm(current_pose[0:3,3]):
-            goal_pose[0:3,3] = current_pose[0:3,3]
-            rospy.loginfo("Arm inner limit reached at "+str(np.linalg.norm(self.current_pose[0:3,3]))+"m normal from the robot base_link to tool0")
-        if np.linalg.norm(current_pose[0:3,3])< 0.40 and np.linalg.norm(goal_pose[0:3,3])<=np.linalg.norm(current_pose[0:3,3]):
-            goal_pose[0:3,3] = current_pose[0:3,3]
-            rospy.loginfo("Arm outer limit reached at "+str(np.linalg.norm(self.current_pose[0:3,3]))+"m normal from the robot base_link to tool0")
-        return goal_pose
 
 if __name__ == '__main__':
  

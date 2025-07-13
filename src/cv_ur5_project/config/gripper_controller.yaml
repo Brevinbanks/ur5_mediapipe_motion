@@ -1,5 +1,10 @@
 
-# Publish all joint states -----------------------------------
+# Controller configuration for robotiq gripper Slider1 joint.
+# - `gripper_joint_state_controller` publishes the current states (positions, velocities) 
+#   of the gripper joints at 50 Hz.
+# - `Slider1_effort_controller` sends direct effort commands to the Slider1 joint,
+#   with constraints and timing parameters for smooth control and stopping behavior.
+
 gripper_joint_state_controller:
   type: joint_state_controller/JointStateController
   publish_rate: 50
@@ -7,12 +12,6 @@ gripper_joint_state_controller:
 Slider1_effort_controller:
   type: effort_controllers/JointEffortController
   joint: Slider1
-  # pid: {p: 100.0, i: 0.01, d: 10.0} # Adjust PID parameters as needed
-
-# Slider2_effort_controller:
-#   type: effort_controllers/JointEffortController
-#   joint: Slider2
-#   pid: {p: 100.0, i: 0.01, d: 10.0} # Adjust PID parameters as needed
 
   constraints:
     goal_time: 0.6

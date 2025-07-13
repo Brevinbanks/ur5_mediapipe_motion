@@ -24,7 +24,6 @@
   <joint name="viewer_cam_joint" type="fixed">
     <parent link="world"/>
     <child link="viewer_cam_link"/>
-    <!-- <origin xyz="2.4 0.2 1.5" rpy="1.57 0 -1.57"/> -->
     <origin xyz="2.4 0.2 1.5" rpy="0 0 3.14"/>
   </joint>
 

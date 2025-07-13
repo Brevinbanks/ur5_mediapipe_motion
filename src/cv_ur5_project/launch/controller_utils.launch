@@ -1,6 +1,15 @@
 <?xml version="1.0"?>
 <launch>
+  <!--
+  Launch file to start essential robot state and controller nodes for the UR5 robot.
 
+  - Starts the `robot_state_publisher` to publish joint transforms at 50 Hz.
+  - Publishes a fake calibration message (`true`) to the /calibrated topic.
+  - Loads the joint state controller parameters from a YAML file.
+  - Spawns the `joint_state_controller` using the controller manager.
+
+  This setup ensures the robot's state is broadcasted correctly and the joint state controller is active.
+  -->
   <!-- Robot state publisher -->
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
     <param name="publish_frequency" type="double" value="50.0" />

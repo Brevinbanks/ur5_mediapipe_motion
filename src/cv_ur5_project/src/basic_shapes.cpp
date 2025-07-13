@@ -1,3 +1,6 @@
+// This ROS node publishes a basic cube marker to the "visualization_marker" topic.
+// The marker appears in RViz at the origin of the "cube_frame_0" frame and updates at 1 Hz.
+
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 
@@ -50,17 +53,6 @@ int main( int argc, char** argv )
     marker.color.b = 0.651f;
     marker.color.a = 1.0;
 
-
-
-
-  // <material name="green">
-  //   <color rgba="0.537 0.878 0.651 1.000"/>
-  // </material>
-
-  // <material name="blue">
-  //   <color rgba="0.419 0.796 0.898 1.000"/>
-  // </material>
-
     marker.lifetime = ros::Duration();
 
     // Publish the marker
@@ -75,22 +67,6 @@ int main( int argc, char** argv )
     }
     marker_pub.publish(marker);
     ROS_WARN_ONCE("Subscriber found. Generating Shape");
-    // Cycle between different shapes
-    // switch (shape)
-    // {
-    // case visualization_msgs::Marker::CUBE:
-    //   shape = visualization_msgs::Marker::SPHERE;
-    //   break;
-    // case visualization_msgs::Marker::SPHERE:
-    //   shape = visualization_msgs::Marker::ARROW;
-    //   break;
-    // case visualization_msgs::Marker::ARROW:
-    //   shape = visualization_msgs::Marker::CYLINDER;
-    //   break;
-    // case visualization_msgs::Marker::CYLINDER:
-    //   shape = visualization_msgs::Marker::CUBE;
-    //   break;
-    // }
 
     r.sleep();
   }
