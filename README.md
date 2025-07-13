@@ -79,11 +79,26 @@ pip install sympy
 These are the only depenedencies for the project that may not already be installed in the ROS Melodic distribution.
 
 ## Mediapipe Dependencies
-In your Python 3.7+ environment, install the requirements.txt file in the python3files folder:
+You may want to create a new python 3 environment. You can find more info online to do this for specific python workflows, but a very generic version is this here.
+If you hav version of Python 3.7+ in your path installed try:
+```bash
+python3 -m venv mp_env
+source mp_env/bin/activate
+```
+
+In your new Python 3.7+ environment, install the requirements.txt file in the python3files folder:
 ```bash
 pip install -r requirements.txt
 ```
 - assuming the requirements file is in the current folder of your terminal directory. (Not inside the cv_workspace folder)
+For your information these dependencies are as follows:
+
+numpy
+opencv-python
+mediapipe
+roslibpy
+transforms3d
+Pillow
 
 
 ## Build the Project
@@ -109,7 +124,7 @@ Additionally, two rqt windows will open up. One is the joint controller GUI, and
 The joint controller will allow you to control the joints of the robot individually if you select the controller available in the two drop down menus and click the play button. NOTE that you must turn the button back off to use the mediapipe controller or any other script based controller.
 
 The rqt_reconfigure GUI will allow you to edit specific node parameters, but the default one that pops up is Slider1. This is the joint effort controller for the gripper. Click the drop down arrow next to the Slider1 item and then you can see a number for the effort.
--100 is closed, 100 is open. Check the box to have these changes effect the gripper. Uncheck the box if you want to have the mediapipe controller control the gripper.
+-100 is closed, 100 is open. Check the box to have these changes affect the gripper. Uncheck the box if you want to have the mediapipe controller control the gripper.
 
 Be sure to kill the launch process with ctrl+C if you want to launch a different file.
 
@@ -129,23 +144,27 @@ The Gazebo simulation is used to help simulate collision physics between the rob
 Before we can control the robot with any outside messages, we need the robot controller to be running. We can do this with the following command:
 ```bash
 cd ~/cv_workspace/src/cv_ur5_project/src
+chmod +x ur5_controller.py
 ./ur5_controller.py
 ```
 This will start the joint state publisher and the robot controller. The joint state publisher will publish the current joint positions to the /joint_states topic. The robot controller will subscribe to the /arm_controller/follow_joint_trajectory topic and will move the robot to the goal poses. REMEMBER ./ur5_controller.py IS REQUIRED FOR THE ROBOT TO MOVE VIA SCRIPT.
+We use chmod +x ur5_controller.py to make the scrpt executable. We only need to run this once ever for each python script.
 
 We have two scripts that interact with the robot controller. One is the cv_joint_pub.py script, and the other is the kinematic_control_ur5.py script. The cv_joint_pub.py script is a simple script that will move the robot to a goal pose based on given joint angles in the script. The kinematic_control_ur5.py script will take in a list of joint angles and will move the robot to the goal pose and then move the robot based on input from the mediapipe pose and hand landmarks.
 
 To run the basic cv_joint_pub.py script, we can run the following command:
 ```bash
 cd ~/cv_workspace/src/cv_ur5_project/src
+chmod +x cv_joint_pub.py
 ./ cv_joint_pub.py
 ```
-The robot should move to the joint angles in the script.
+The robot should move to the joint angles in the script. 
 After the robot has moved be sure to kill that script with ctrl+c in the terminal before other motion scripts.
 
 To run the kinematic_control_ur5.py script, we can run the following command:
 ```bash
 cd ~/cv_workspace/src/cv_ur5_project/src
+chmod +x kinematic_control_ur5.py
 ./ kinematic_control_ur5.py
 ```
 The robot should move to the home pose in the script and then move to the goal poses based on the mediapipe pose and hand landmarks.
@@ -186,16 +205,15 @@ Learn more about Mediapipe here: https://mediapipe.dev/ and https://chuoling.git
 
 The UR5 robot is a popular robotic arm that is commonly used in robotics and industrial automation. It is a 6-axis robot with a gripper that can be controlled by a variety of different software. The UR5 robot is often used in industrial applications, such as assembly line automation, material handling, and warehouse automation. Learn more about the UR5 robot here: https://www.universal-robots.com/products/ur5-robot/
 
-The forward kinematics, jacobian, and inverse kinematics of the UR5 robot are used to calculate the end effector pose and the robot's joint positions. The solutions for forward kinematics and inverse kinematics are based on the robot's kinematics, which are defined in the URDF file, were all solved by me using gemoetric twists, exponential matricies, and the jacobian inverse. 
+The forward kinematics, jacobian, and inverse kinematics of the UR5 robot are used to calculate the end effector pose and the robot's joint positions. The solutions for forward kinematics and inverse kinematics are based on the robot's kinematics, which are defined in the URDF file, were all solved by me using gemoetric twists, exponential matrices, and the jacobian inverse. 
 Learn more about these basic robotics concepts here: https://www.universal-robots.com/articles/ur-robot-kinematics/
 Geometric twists: https://en.wikipedia.org/wiki/Twist_(mathematics)
-Exponential matricies: https://en.wikipedia.org/wiki/Matrix_exponential
+Exponential matrices: https://en.wikipedia.org/wiki/Matrix_exponential
 Jacobian inverse: https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant#Jacobian_matrix_inverse
 Inverse kinematics: https://en.wikipedia.org/wiki/Inverse_kinematics
 
 # UR5 Control via Inverse Kinematics - Broyden's Method
-The UR5 robot is controlled via inverse kinematics - by means of broyden's method. This method is used to solve for the joint angles that will move the robot to a desired end effector pose. Broydens method is a numerical method that takes the jacobian inverse of the robot and multiplies it by the error between the desired end effector pose and the current end effector pose. It includes a damping term to reduce the oscillations of the joint angles and helps to converge to the desired pose. This makes for smoother and more stable control of the robot. Learn more abg
-eout broyden's method here: 
+The UR5 robot is controlled via inverse kinematics - by means of broyden's method. This method is used to solve for the joint angles that will move the robot to a desired end effector pose. Broydens method is a numerical method that takes the jacobian inverse of the robot and multiplies it by the error between the desired end effector pose and the current end effector pose. It includes a damping term to reduce the oscillations of the joint angles and helps to converge to the desired pose. This makes for smoother and more stable control of the robot. Learn more about broyden's method here: 
 https://en.wikipedia.org/wiki/Broyden%27s_method
 
 
@@ -206,7 +224,7 @@ In ur5_arm_vision_2_trans_and_grip_python3_talker.py you will find a variable ca
 
 With Gazebo open from the launch file, ur5_controller.py running, and kinematic_control_ur5.py running, you can now control the robot with the mediapipe controller. After the robot finishing the homing step from kinematic_control_ur5.py, pose detection will start and the robot will move to your hand position. The gripper will open and close to match the hand state. 
 
-Try to move your hand to the blue cube in the Gazebo world and pick it up. Try to see if you can pick up the blue cube and place it in the white box. The robot does not have gaurds to stop it from hitting the table so be careful not to move to far or fast.
+Try to move your hand to the blue cube in the Gazebo world and pick it up. Try to see if you can pick up the blue cube and place it in the white box. The robot does not have guards to stop it from hitting the table so be careful not to move to far or fast.
 
 Thats the basics of the project. I hope you enjoyed it. If you have any questions, feel free to reach out to me on github or email me at my website https://brevinbanks.github.io/#contact
 
