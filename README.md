@@ -80,7 +80,7 @@ These are the only depenedencies for the project that may not already be install
 
 ## Mediapipe Dependencies
 You may want to create a new python 3 environment. You can find more info online to do this for specific python workflows, but a very generic version is this here.
-If you hav version of Python 3.7+ in your path installed try:
+If you have a version of Python 3.7+ in your path installed try:
 ```bash
 python3 -m venv mp_env
 source mp_env/bin/activate
